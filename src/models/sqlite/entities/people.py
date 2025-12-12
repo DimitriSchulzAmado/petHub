@@ -1,0 +1,19 @@
+from sqlalchemy import BIGINT, Column, ForeignKey, String
+
+from src.models.sqlite.settings.base import Base
+
+
+class PeopleTable(Base):
+    __tablename__ = "people"
+
+    id = Column(BIGINT, primary_key=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    age = Column(BIGINT, nullable=True)
+    pet_id = Column(BIGINT, ForeignKey("pets.id"))
+
+    def __repr__(self) -> str:
+        return (
+            f"People [first_name={self.first_name}, "
+            f"last_name={self.last_name}, pet_id={self.pet_id}]"
+        )
