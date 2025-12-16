@@ -53,7 +53,7 @@ def test_list_pet():
 def test_delete_pet():
     mock_connection = MockConnection()
     repository = PetsRepository(mock_connection)
-    repository.delete_pets("dog")
+    repository.delete_pets("petName")
 
     mock_connection.session.query.assert_called_once_with(PetsTable)
     mock_connection.session.filter.assert_called_once_with(PetsTable.name == "dog")
@@ -77,6 +77,6 @@ def test_delete_pet_error():
     repository = PetsRepository(mock_connection)
 
     with pytest.raises(Exception):
-        repository.delete_pets("dog")
+        repository.delete_pets("petName")
 
     mock_connection.session.rollback.assert_called_once()
