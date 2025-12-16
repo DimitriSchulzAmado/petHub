@@ -1,6 +1,8 @@
 from unittest import mock
 
+import pytest
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
+from sqlalchemy.orm.exc import NoResultFound
 
 from src.models.sqlite.entities.pets import PetsTable
 from src.models.sqlite.repositories.pets_repository import PetsRepository
@@ -20,15 +22,23 @@ class MockConnection:
             ]
         )
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+    def __enter__(self): return self
+    def __exit__(self, exc_type, exc_val, exc_tb): pass
 
 
-def test_list_pets():
+class MockConnectionNoResults:
+    def __init__(self):
+        self.session = UnifiedAlchemyMagicMock()
+        self.session.query.side_effect = self.__raise_no_results_found
 
+    def __raise_no_results_found(self, *args, **kwargs):
+        raise NoResultFound("No result found")
+
+    def __enter__(self): return self
+    def __exit__(self, exc_type, exc_val, exc_tb): pass
+
+
+def test_list_pet():
     mock_connection = MockConnection()
     repository = PetsRepository(mock_connection)
     response = repository.list_pets()
@@ -38,3 +48,35 @@ def test_list_pets():
     mock_connection.session.filter.assert_not_called()
 
     assert response[0].name == "dog"
+
+
+def test_delete_pet():
+    mock_connection = MockConnection()
+    repository = PetsRepository(mock_connection)
+    repository.delete_pets("dog")
+
+    mock_connection.session.query.assert_called_once_with(PetsTable)
+    mock_connection.session.filter.assert_called_once_with(PetsTable.name == "dog")
+    mock_connection.session.delete.assert_called_once()
+
+
+def test_list_pets_no_result():
+    mock_connection = MockConnectionNoResults()
+    repository = PetsRepository(mock_connection)
+    response = repository.list_pets()
+
+    mock_connection.session.query.assert_called_once_with(PetsTable)
+    mock_connection.session.all.assert_not_called()
+    mock_connection.session.filter.assert_not_called()
+
+    assert response == []
+
+
+def test_delete_pet_error():
+    mock_connection = MockConnection()
+    repository = PetsRepository(mock_connection)
+
+    with pytest.raises(Exception):
+        repository.delete_pets("dog")
+
+    mock_connection.session.rollback.assert_called_once()

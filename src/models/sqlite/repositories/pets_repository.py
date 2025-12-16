@@ -24,7 +24,6 @@ class PetsRepository:
                     .delete()
                 )
                 database.session.commit()
-                print(database.session.query(PetsTable).all())
             except Exception as exception:
                 database.session.rollback()
                 raise exception
